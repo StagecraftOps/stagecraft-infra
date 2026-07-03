@@ -1,0 +1,6 @@
+aws_region    = "us-east-1"
+cluster_name  = "stagecraft"
+sqs_queue_arn = "arn:aws:sqs:us-east-1:123456789012:stagecraft-webhooks"
+
+# Optional — leave empty to skip granting the worker S3 access
+kb_s3_bucket_arn = ""
