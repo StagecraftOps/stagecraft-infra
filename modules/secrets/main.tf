@@ -17,6 +17,7 @@ locals {
     SECRET_KEY             = var.secret_key
     TOKEN_ENCRYPTION_KEY   = var.token_encryption_key
     INTERNAL_API_KEY       = var.internal_api_key
+    SQS_QUEUE_URL          = var.sqs_queue_url
     WORKER_INTERNAL_URL    = local.worker_internal_url
     BEDROCK_MODEL_ID       = var.bedrock_model_id
     BEDROCK_CHAT_MODEL_ID  = var.bedrock_model_id
