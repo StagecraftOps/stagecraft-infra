@@ -17,6 +17,7 @@ default `"stagecraft"`).
 | `module.elasticache` (`modules/elasticache`) | Redis, hand-rolled, TLS-in-transit + at-rest encryption (no AUTH token — connects via a plain `rediss://` URL, which `stagecraft-api`/`stagecraft-worker` already support). |
 | `module.sqs` (`modules/sqs`) | The `stagecraft-webhooks` queue + a dead-letter queue (5 max receives before a message is parked for manual inspection). |
 | `module.iam` (`modules/iam`) | One IRSA role per service (webhook/worker/api) scoped to exactly what it calls, plus the AWS Load Balancer Controller's role. |
+| `module.secrets` (`modules/secrets`) | Every application credential (GitHub App, JWT/Fernet keys, computed `DATABASE_URL`/`REDIS_URL`/etc.) as 5 JSON secrets in Secrets Manager — `stagecraft-{api,worker,webhook,mcp,frontend}-secrets` — plus the IRSA role the External Secrets Operator uses to read them. Nothing here is ever a plain Terraform output. |
 
 **Why RDS/ElastiCache are hand-rolled instead of registry modules**: for VPC and EKS, the registry modules are the extremely well-established, de facto standard (huge complexity reduction, very stable interfaces). For RDS/ElastiCache, the resources needed are simple enough that hand-rolling with core `aws_db_instance`/`aws_elasticache_replication_group` resources carries less risk than depending on a less-thoroughly-verified module interface — on a production account, correctness matters more than avoiding two dozen lines of code. **Verify the pinned module versions' interfaces still match after `terraform init` (run `terraform plan` and read it — do not blind-apply) before applying against a real account** — registry module APIs do shift between majors, and this was written without live access to check the current docs.
 
@@ -26,26 +27,37 @@ Reads stage 1's outputs via `terraform_remote_state` (local backend, relative pa
 
 - The `stagecraft` namespace
 - The AWS Load Balancer Controller (via `helm_release`, using stage 1's `lb_controller_role_arn`)
-- One Kubernetes `Secret` per service (`stagecraft-{api,worker,webhook,mcp,frontend}-secrets`) — `DATABASE_URL`/`REDIS_URL`/`SQS_QUEUE_URL` are computed from stage 1 outputs; everything else (GitHub App credentials, `SECRET_KEY`, `TOKEN_ENCRYPTION_KEY`, etc.) is a Terraform variable with an **empty default** — fill in via a gitignored `terraform.tfvars` before applying, never commit real values.
+- The `external-secrets` namespace + the External Secrets Operator itself (via `helm_release`, its ServiceAccount annotated with stage 1's `eso_role_arn`)
+
+Stage 2 no longer creates any Kubernetes `Secret` — it only installs the operator that will. **No credential ever passes through this stage's state or tfvars.**
+
+## How secrets actually reach the pods
+
+1. Stage 1's `module.secrets` writes every credential into 5 Secrets Manager entries, sourced from stage 1's own `terraform.tfvars` (gitignored, real values only there).
+2. Stage 2 installs the External Secrets Operator, authenticated via IRSA (no static AWS keys).
+3. `stagecraft-helm`'s umbrella chart installs one cluster-wide `ClusterSecretStore` (`templates/clustersecretstore.yaml`) pointing at Secrets Manager through that same IRSA identity.
+4. Each of the 5 service charts renders an `ExternalSecret` (`templates/externalsecret.yaml`, driven by `common.externalSecret`) that pulls its JSON secret and materializes it as a Kubernetes `Secret` named `stagecraft-<service>-secrets` — exactly the name each Deployment already expects via `envFrom.secretRef`.
+
+Change a credential by updating stage 1's `terraform.tfvars` and re-applying — ESO re-syncs the k8s Secret on its `refreshInterval` (default `1h`) without you ever touching the cluster directly.
 
 ## Usage
 
 ```bash
 # Stage 1
-cp terraform.tfvars.example terraform.tfvars   # only if you need non-default sizing
+cp terraform.tfvars.example terraform.tfvars   # fill in real GitHub App / key values, never commit
 terraform init
 terraform plan   # READ THIS before apply, especially the vpc/eks module diffs
 terraform apply
 
 # Stage 2 (after stage 1 succeeds)
 cd cluster-bootstrap
-cp terraform.tfvars.example terraform.tfvars   # fill in real secrets
 terraform init
 terraform plan
 terraform apply
-```
 
-After both stages succeed, `helm install` the umbrella chart from `stagecraft-helm` — the k8s Secrets this stage creates are exactly what its charts' `envFrom` expects.
+# Then, once ESO has synced the 5 Secrets (check with: kubectl get externalsecret -n stagecraft)
+helm install stagecraft ../../stagecraft-helm -f ../../stagecraft-helm/values.yaml -f ../../stagecraft-helm/values-prod.yaml
+```
 
 ## What's still not in Terraform
 

@@ -114,3 +114,40 @@ module "iam" {
   sqs_queue_arn     = module.sqs.queue_arn
   kb_s3_bucket_arn  = var.kb_s3_bucket_arn
 }
+
+# --- Per-service secrets in Secrets Manager (synced to k8s by the External
+# Secrets Operator, installed in stage 2 — see modules/secrets) ---
+module "secrets" {
+  source = "./modules/secrets"
+
+  cluster_name      = var.cluster_name
+  oidc_provider_arn = module.eks.oidc_provider_arn
+  oidc_provider_url = module.eks.cluster_oidc_issuer_url
+  namespace         = var.namespace
+
+  rds_endpoint                   = module.rds.endpoint
+  rds_port                       = module.rds.port
+  rds_db_name                    = module.rds.db_name
+  rds_master_username            = module.rds.master_username
+  rds_master_password_secret_arn = module.rds.master_password_secret_arn
+
+  redis_primary_endpoint = module.elasticache.primary_endpoint
+  redis_port             = module.elasticache.port
+
+  sqs_queue_url = module.sqs.queue_url
+
+  github_client_id       = var.github_client_id
+  github_client_secret   = var.github_client_secret
+  github_webhook_secret  = var.github_webhook_secret
+  github_app_id          = var.github_app_id
+  github_app_private_key = var.github_app_private_key
+  github_app_slug        = var.github_app_slug
+  allowed_org            = var.allowed_org
+  secret_key             = var.secret_key
+  token_encryption_key   = var.token_encryption_key
+  internal_api_key       = var.internal_api_key
+  nextauth_secret        = var.nextauth_secret
+  ses_from_email         = var.ses_from_email
+  frontend_url           = var.frontend_url
+  bedrock_model_id       = var.bedrock_model_id
+}

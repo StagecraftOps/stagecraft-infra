@@ -67,3 +67,28 @@ output "api_role_arn" {
 output "lb_controller_role_arn" {
   value = module.iam.lb_controller_role_arn
 }
+
+output "eso_role_arn" {
+  description = "IRSA role the External Secrets Operator (stage 2) uses to read the secrets below"
+  value       = module.secrets.eso_role_arn
+}
+
+output "api_secret_name" {
+  value = module.secrets.api_secret_name
+}
+
+output "worker_secret_name" {
+  value = module.secrets.worker_secret_name
+}
+
+output "webhook_secret_name" {
+  value = module.secrets.webhook_secret_name
+}
+
+output "mcp_secret_name" {
+  value = module.secrets.mcp_secret_name
+}
+
+output "frontend_secret_name" {
+  value = module.secrets.frontend_secret_name
+}

@@ -103,3 +103,93 @@ variable "redis_num_cache_clusters" {
   type        = number
   default     = 1
 }
+
+# --- Per-service secrets (stored in Secrets Manager here, synced into k8s
+# Secrets by the External Secrets Operator in stage 2 — never touch the
+# cluster directly, and never sit in a stage-2 tfvars file). Everything
+# below has no safe default — fill in via a gitignored terraform.tfvars. ---
+
+variable "github_client_id" {
+  type      = string
+  default   = ""
+  sensitive = true
+}
+
+variable "github_client_secret" {
+  type      = string
+  default   = ""
+  sensitive = true
+}
+
+variable "github_webhook_secret" {
+  type      = string
+  default   = ""
+  sensitive = true
+}
+
+variable "github_app_id" {
+  type      = string
+  default   = ""
+  sensitive = true
+}
+
+variable "github_app_private_key" {
+  type      = string
+  default   = ""
+  sensitive = true
+}
+
+variable "github_app_slug" {
+  description = "GitHub App slug (lowercase, hyphens) — used to build the install URL. Not secret, but kept alongside the rest for convenience."
+  type        = string
+  default     = ""
+}
+
+variable "allowed_org" {
+  description = "GitHub org stagecraft-mcp restricts tool calls to. Not secret."
+  type        = string
+  default     = ""
+}
+
+variable "secret_key" {
+  description = "JWT signing key"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "token_encryption_key" {
+  description = "Fernet key for encrypting stored GitHub OAuth tokens"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "internal_api_key" {
+  description = "Shared secret gating /internal/* routes between api, worker, and mcp"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "nextauth_secret" {
+  type      = string
+  default   = ""
+  sensitive = true
+}
+
+variable "ses_from_email" {
+  description = "Leave empty to leave SES_ENABLED effectively off. Not secret."
+  type        = string
+  default     = ""
+}
+
+variable "frontend_url" {
+  type    = string
+  default = "https://stagecraft.example.com"
+}
+
+variable "bedrock_model_id" {
+  type    = string
+  default = "anthropic.claude-sonnet-4-6"
+}
