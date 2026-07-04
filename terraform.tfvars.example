@@ -1,6 +1,12 @@
-aws_region    = "us-east-1"
-cluster_name  = "stagecraft"
-sqs_queue_arn = "arn:aws:sqs:us-east-1:123456789012:stagecraft-webhooks"
+aws_region   = "us-east-1"
+cluster_name = "stagecraft"
 
-# Optional — leave empty to skip granting the worker S3 access
-kb_s3_bucket_arn = ""
+# Everything below has a sensible default (see variables.tf) — only override
+# what you actually need to change for this environment.
+
+# node_instance_types      = ["t3.medium"]
+# rds_instance_class       = "db.t4g.micro"
+# rds_multi_az             = false
+# redis_node_type          = "cache.t4g.micro"
+# redis_num_cache_clusters = 1
+# kb_s3_bucket_arn         = ""

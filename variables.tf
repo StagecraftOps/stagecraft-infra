@@ -5,7 +5,7 @@ variable "aws_region" {
 }
 
 variable "cluster_name" {
-  description = "Name of the EKS cluster and prefix for related resources"
+  description = "Name prefix for every resource this stack creates (EKS cluster, RDS, Redis, SQS, IAM roles)"
   type        = string
   default     = "stagecraft"
 }
@@ -46,13 +46,60 @@ variable "namespace" {
   default     = "stagecraft"
 }
 
-variable "sqs_queue_arn" {
-  description = "ARN of the pre-existing shared SQS queue (stagecraft-webhooks) — provisioned outside this stack"
-  type        = string
-}
-
 variable "kb_s3_bucket_arn" {
   description = "ARN of the Bedrock Knowledge Base S3 source bucket (empty string to skip granting worker access)"
   type        = string
   default     = ""
+}
+
+# --- RDS (Postgres) ---
+
+variable "rds_engine_version" {
+  description = "Must be >= 15.2 for pgvector support — verify current availability before applying"
+  type        = string
+  default     = "16.4"
+}
+
+variable "rds_instance_class" {
+  type    = string
+  default = "db.t4g.micro"
+}
+
+variable "rds_allocated_storage" {
+  type    = number
+  default = 20
+}
+
+variable "rds_multi_az" {
+  type    = bool
+  default = false
+}
+
+variable "rds_backup_retention_days" {
+  type    = number
+  default = 7
+}
+
+variable "rds_skip_final_snapshot" {
+  description = "Set false for anything beyond a demo"
+  type        = bool
+  default     = true
+}
+
+# --- ElastiCache (Redis) ---
+
+variable "redis_engine_version" {
+  type    = string
+  default = "7.1"
+}
+
+variable "redis_node_type" {
+  type    = string
+  default = "cache.t4g.micro"
+}
+
+variable "redis_num_cache_clusters" {
+  description = "1 = single node; 2+ = primary + replica(s) with automatic failover"
+  type        = number
+  default     = 1
 }
