@@ -35,32 +35,27 @@ module "vpc" {
 }
 
 # --- EKS ---
-# terraform-aws-modules/eks/aws — handles the OIDC provider + managed node
-# group internally. Verify the `~> 20.0` interface after `terraform init`.
+# Hand-rolled (not the terraform-aws-modules/eks registry module) — that
+# module resolves the calling identity's IAM role client-side via
+# aws_iam_session_context, which needs iam:GetRole on your own role.
+# PowerUserAccess (and similar restricted permission sets) don't grant that,
+# with no way to opt out of the module's lookup. The native
+# access_config.bootstrap_cluster_creator_admin_permissions flag below
+# achieves the same "creator gets cluster admin" outcome entirely
+# server-side, with no IAM introspection required. See modules/eks.
 module "eks" {
-  source  = "terraform-aws-modules/eks/aws"
-  version = "~> 20.0"
+  source = "./modules/eks"
 
-  cluster_name    = var.cluster_name
-  cluster_version = var.kubernetes_version
+  cluster_name       = var.cluster_name
+  kubernetes_version = var.kubernetes_version
 
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets
 
-  cluster_endpoint_public_access  = true
-  cluster_endpoint_private_access = true
-
-  enable_irsa = true
-
-  eks_managed_node_groups = {
-    default = {
-      instance_types = var.node_instance_types
-      min_size       = var.node_min_size
-      max_size       = var.node_max_size
-      desired_size   = var.node_desired_size
-      subnet_ids     = module.vpc.private_subnets
-    }
-  }
+  node_instance_types = var.node_instance_types
+  node_min_size       = var.node_min_size
+  node_max_size       = var.node_max_size
+  node_desired_size   = var.node_desired_size
 
   tags = { Name = var.cluster_name }
 }
