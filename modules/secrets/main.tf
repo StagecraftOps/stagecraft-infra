@@ -20,6 +20,7 @@ locals {
     WORKER_INTERNAL_URL    = local.worker_internal_url
     BEDROCK_MODEL_ID       = var.bedrock_model_id
     BEDROCK_CHAT_MODEL_ID  = var.bedrock_model_id
+    BEDROCK_API_KEY        = var.bedrock_api_key
   }
 
   worker_payload = {
@@ -32,6 +33,7 @@ locals {
     TOKEN_ENCRYPTION_KEY   = var.token_encryption_key
     INTERNAL_API_KEY       = var.internal_api_key
     BEDROCK_MODEL_ID       = var.bedrock_model_id
+    BEDROCK_API_KEY        = var.bedrock_api_key
     FRONTEND_URL           = var.frontend_url
     SES_FROM_EMAIL         = var.ses_from_email
     MCP_GITHUB_URL         = local.mcp_github_url

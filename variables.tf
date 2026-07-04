@@ -193,3 +193,10 @@ variable "bedrock_model_id" {
   type    = string
   default = "anthropic.claude-sonnet-4-6"
 }
+
+variable "bedrock_api_key" {
+  description = "Bedrock bearer-token API key — takes priority over IRSA-based invoke when set. Short-lived keys expire; re-apply with a fresh value to rotate."
+  type        = string
+  default     = ""
+  sensitive   = true
+}

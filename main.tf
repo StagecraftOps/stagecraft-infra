@@ -145,4 +145,5 @@ module "secrets" {
   ses_from_email         = var.ses_from_email
   frontend_url           = var.frontend_url
   bedrock_model_id       = var.bedrock_model_id
+  bedrock_api_key        = var.bedrock_api_key
 }

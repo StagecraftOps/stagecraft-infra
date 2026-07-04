@@ -126,3 +126,10 @@ variable "frontend_url" {
 variable "bedrock_model_id" {
   type = string
 }
+
+variable "bedrock_api_key" {
+  description = "Bedrock long/short-term API key (bearer token) — takes priority over IRSA-based invoke when set. See app/services/bedrock_client.py in api and worker."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
