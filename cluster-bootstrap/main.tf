@@ -27,6 +27,20 @@ resource "helm_release" "aws_load_balancer_controller" {
     value = local.stage1.cluster_name
   }
 
+  # Explicit vpcId/region — the controller otherwise auto-discovers these via
+  # EC2 instance metadata (IMDS), which times out from pod network namespace
+  # when the node's IMDS hop limit is 1 (pods aren't hostNetwork, so the
+  # request needs 2 hops and gets dropped). Skips IMDS entirely.
+  set {
+    name  = "vpcId"
+    value = local.stage1.vpc_id
+  }
+
+  set {
+    name  = "region"
+    value = var.aws_region
+  }
+
   set {
     name  = "serviceAccount.create"
     value = "true"

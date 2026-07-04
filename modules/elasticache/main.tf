@@ -33,7 +33,7 @@ resource "aws_security_group" "this" {
 # needing a token embedded in it.
 resource "aws_elasticache_replication_group" "this" {
   replication_group_id = "${var.name}-redis"
-  description          = "Stagecraft Redis — Celery broker/backend (worker) + WebSocket pub/sub (api)"
+  description          = "Stagecraft Redis - Celery broker/backend (worker) + WebSocket pub/sub (api)"
 
   engine         = "redis"
   engine_version = var.engine_version
