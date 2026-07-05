@@ -1,3 +1,8 @@
+resource "random_password" "neo4j" {
+  length  = 24
+  special = false # NEO4J_AUTH is "user/password" — avoid characters needing escaping there
+}
+
 locals {
   oidc_issuer_host = replace(var.oidc_provider_url, "https://", "")
 
@@ -7,6 +12,7 @@ locals {
   # MCP server's search_remediations tool calls this; pointing at :8000 (the
   # container port, not the Service port) times out.
   stagecraft_api_url = "http://stagecraft-api.${var.namespace}.svc.cluster.local:80"
+  neo4j_uri          = "bolt://stagecraft-neo4j.${var.namespace}.svc.cluster.local:7687"
 
   api_payload = {
     DATABASE_URL           = "postgresql+asyncpg://${var.rds_master_username}:${data.aws_secretsmanager_secret_version.rds_master_password.secret_string}@${var.rds_endpoint}:${var.rds_port}/${var.rds_db_name}"
@@ -25,6 +31,9 @@ locals {
     BEDROCK_MODEL_ID       = var.bedrock_model_id
     BEDROCK_CHAT_MODEL_ID  = var.bedrock_model_id
     BEDROCK_API_KEY        = var.bedrock_api_key
+    NEO4J_URI              = local.neo4j_uri
+    NEO4J_USER             = "neo4j"
+    NEO4J_PASSWORD         = random_password.neo4j.result
   }
 
   worker_payload = {
@@ -41,6 +50,9 @@ locals {
     FRONTEND_URL           = var.frontend_url
     SES_FROM_EMAIL         = var.ses_from_email
     MCP_GITHUB_URL         = local.mcp_github_url
+    NEO4J_URI              = local.neo4j_uri
+    NEO4J_USER             = "neo4j"
+    NEO4J_PASSWORD         = random_password.neo4j.result
   }
 
   webhook_payload = {
@@ -112,8 +124,20 @@ resource "aws_secretsmanager_secret_version" "frontend" {
   secret_string = jsonencode(local.frontend_payload)
 }
 
+# Consumed only by the Neo4j pod itself (NEO4J_AUTH="neo4j/<password>") — api
+# and worker get their NEO4J_URI/USER/PASSWORD via their own payloads above,
+# not this secret.
+resource "aws_secretsmanager_secret" "neo4j" {
+  name                    = "${var.cluster_name}-neo4j-secrets"
+  recovery_window_in_days = 0
+}
+resource "aws_secretsmanager_secret_version" "neo4j" {
+  secret_id     = aws_secretsmanager_secret.neo4j.id
+  secret_string = jsonencode({ NEO4J_AUTH = "neo4j/${random_password.neo4j.result}" })
+}
+
 # --- External Secrets Operator's own IRSA role ---
-# Least-privilege: read-only on exactly these 5 secrets, nothing else in the
+# Least-privilege: read-only on exactly these 6 secrets, nothing else in the
 # account. ESO uses this (via a ClusterSecretStore in stagecraft-helm) to
 # sync each secret into a same-named Kubernetes Secret.
 data "aws_iam_policy_document" "eso_trust" {
@@ -159,6 +183,7 @@ resource "aws_iam_role_policy" "eso" {
         aws_secretsmanager_secret.webhook.arn,
         aws_secretsmanager_secret.mcp.arn,
         aws_secretsmanager_secret.frontend.arn,
+        aws_secretsmanager_secret.neo4j.arn,
       ]
     }]
   })
