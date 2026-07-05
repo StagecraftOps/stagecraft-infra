@@ -3,7 +3,10 @@ locals {
 
   worker_internal_url = "http://stagecraft-worker.${var.namespace}.svc.cluster.local:8080"
   mcp_github_url      = "http://stagecraft-mcp.${var.namespace}.svc.cluster.local:8010/sse"
-  stagecraft_api_url  = "http://stagecraft-api.${var.namespace}.svc.cluster.local:8000"
+  # Port 80 = the stagecraft-api ClusterIP Service port (targetPort 8000). The
+  # MCP server's search_remediations tool calls this; pointing at :8000 (the
+  # container port, not the Service port) times out.
+  stagecraft_api_url = "http://stagecraft-api.${var.namespace}.svc.cluster.local:80"
 
   api_payload = {
     DATABASE_URL           = "postgresql+asyncpg://${var.rds_master_username}:${data.aws_secretsmanager_secret_version.rds_master_password.secret_string}@${var.rds_endpoint}:${var.rds_port}/${var.rds_db_name}"
