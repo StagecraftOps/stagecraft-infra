@@ -96,3 +96,7 @@ output "mcp_secret_name" {
 output "frontend_secret_name" {
   value = module.secrets.frontend_secret_name
 }
+
+output "neo4j_secret_name" {
+  value = module.secrets.neo4j_secret_name
+}
