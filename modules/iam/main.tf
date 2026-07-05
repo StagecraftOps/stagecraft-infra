@@ -237,3 +237,42 @@ resource "aws_iam_role_policy" "lb_controller" {
   role   = aws_iam_role.lb_controller.id
   policy = file("${path.module}/policies/aws-load-balancer-controller-policy.json")
 }
+
+# ---------------------------------------------------------------------------
+# EBS CSI driver — installed as an EKS addon in stage 2 (cluster-bootstrap),
+# this just provisions the IAM side. Neo4j is this platform's first stateful
+# (PVC-backed) workload, so dynamic EBS volume provisioning didn't exist
+# before this.
+# ---------------------------------------------------------------------------
+data "aws_iam_policy_document" "ebs_csi_trust" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+
+    principals {
+      type        = "Federated"
+      identifiers = [var.oidc_provider_arn]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "${local.oidc_issuer_host}:sub"
+      values   = ["system:serviceaccount:kube-system:ebs-csi-controller-sa"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "${local.oidc_issuer_host}:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "ebs_csi" {
+  name               = "${var.cluster_name}-ebs-csi-driver"
+  assume_role_policy = data.aws_iam_policy_document.ebs_csi_trust.json
+}
+
+resource "aws_iam_role_policy_attachment" "ebs_csi" {
+  role       = aws_iam_role.ebs_csi.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+}
