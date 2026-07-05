@@ -90,3 +90,31 @@ resource "helm_release" "external_secrets" {
     value = local.stage1.eso_role_arn
   }
 }
+
+# EBS CSI driver — an AWS-authored EKS addon (unlike the two community
+# controllers above, so it's installed via aws_eks_addon rather than
+# helm_release). This is the platform's first dynamic volume provisioner;
+# Neo4j is the first workload that needs a PersistentVolumeClaim.
+resource "aws_eks_addon" "ebs_csi" {
+  cluster_name                = local.stage1.cluster_name
+  addon_name                  = "aws-ebs-csi-driver"
+  service_account_role_arn    = local.stage1.ebs_csi_role_arn
+  resolve_conflicts_on_update = "OVERWRITE"
+}
+
+# gp3 StorageClass for anything needing a PVC (currently just Neo4j).
+# WaitForFirstConsumer so the volume provisions in the same AZ as whichever
+# node the pod actually schedules to.
+resource "kubernetes_storage_class" "gp3" {
+  metadata {
+    name = "gp3"
+  }
+  storage_provisioner    = "ebs.csi.aws.com"
+  volume_binding_mode    = "WaitForFirstConsumer"
+  allow_volume_expansion = true
+  parameters = {
+    type = "gp3"
+  }
+
+  depends_on = [aws_eks_addon.ebs_csi]
+}

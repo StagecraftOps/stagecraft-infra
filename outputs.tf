@@ -68,6 +68,10 @@ output "lb_controller_role_arn" {
   value = module.iam.lb_controller_role_arn
 }
 
+output "ebs_csi_role_arn" {
+  value = module.iam.ebs_csi_role_arn
+}
+
 output "eso_role_arn" {
   description = "IRSA role the External Secrets Operator (stage 2) uses to read the secrets below"
   value       = module.secrets.eso_role_arn
