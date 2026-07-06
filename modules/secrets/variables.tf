@@ -21,8 +21,6 @@ variable "eso_service_account_name" {
   default = "external-secrets"
 }
 
-# --- Computed connection info (from the rds/elasticache/sqs modules) ---
-
 variable "rds_endpoint" {
   type = string
 }
@@ -59,8 +57,6 @@ variable "namespace" {
   description = "Kubernetes namespace the Stagecraft services run in — used to build in-cluster DNS names"
   type        = string
 }
-
-# --- Credentials (see root variables.tf for descriptions) ---
 
 variable "github_client_id" {
   type      = string

@@ -1,9 +1,7 @@
-# A dead-letter queue so a poison message (one that repeatedly fails
-# processing) doesn't loop forever — it's moved here after 5 failed receives
-# and can be inspected/replayed manually.
+
 resource "aws_sqs_queue" "dlq" {
   name                      = "${var.name}-webhooks-dlq"
-  message_retention_seconds = 1209600 # 14 days — keep failed messages longer than the main queue
+  message_retention_seconds = 1209600
 }
 
 resource "aws_sqs_queue" "this" {

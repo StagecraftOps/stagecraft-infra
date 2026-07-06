@@ -9,9 +9,6 @@ terraform {
   }
 }
 
-# ---------------------------------------------------------------------------
-# Cluster IAM role
-# ---------------------------------------------------------------------------
 data "aws_iam_policy_document" "cluster_trust" {
   statement {
     effect  = "Allow"
@@ -34,16 +31,6 @@ resource "aws_iam_role_policy_attachment" "cluster_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
 }
 
-# ---------------------------------------------------------------------------
-# Cluster
-#
-# access_config.bootstrap_cluster_creator_admin_permissions grants the IAM
-# principal that calls CreateCluster admin access via an EKS access entry —
-# handled entirely server-side by the EKS API using the caller's SigV4
-# identity. This deliberately avoids the registry module's approach (a
-# client-side aws_iam_session_context lookup requiring iam:GetRole on your
-# own role), which restricted permission sets like PowerUserAccess block.
-# ---------------------------------------------------------------------------
 resource "aws_eks_cluster" "this" {
   name     = var.cluster_name
   role_arn = aws_iam_role.cluster.arn
@@ -65,9 +52,6 @@ resource "aws_eks_cluster" "this" {
   depends_on = [aws_iam_role_policy_attachment.cluster_policy]
 }
 
-# ---------------------------------------------------------------------------
-# OIDC provider (IRSA)
-# ---------------------------------------------------------------------------
 data "tls_certificate" "cluster" {
   url = aws_eks_cluster.this.identity[0].oidc[0].issuer
 }
@@ -78,9 +62,6 @@ resource "aws_iam_openid_connect_provider" "cluster" {
   thumbprint_list = [data.tls_certificate.cluster.certificates[0].sha1_fingerprint]
 }
 
-# ---------------------------------------------------------------------------
-# Node IAM role
-# ---------------------------------------------------------------------------
 data "aws_iam_policy_document" "node_trust" {
   statement {
     effect  = "Allow"
@@ -113,9 +94,6 @@ resource "aws_iam_role_policy_attachment" "node_ecr_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
 
-# ---------------------------------------------------------------------------
-# Managed node group
-# ---------------------------------------------------------------------------
 resource "aws_eks_node_group" "default" {
   cluster_name    = aws_eks_cluster.this.name
   node_group_name = "default"

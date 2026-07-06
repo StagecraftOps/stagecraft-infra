@@ -26,11 +26,6 @@ resource "aws_security_group" "this" {
   tags = { Name = "${var.name}-redis" }
 }
 
-# transit_encryption_enabled -> app services connect via rediss:// (both
-# _make_redis/_make_redis_sync in stagecraft-api and stagecraft-worker already
-# handle rediss:// with an unverified cert, so no app change needed). No AUTH
-# token — keeps the connection string a plain rediss://host:port/0 rather than
-# needing a token embedded in it.
 resource "aws_elasticache_replication_group" "this" {
   replication_group_id = "${var.name}-redis"
   description          = "Stagecraft Redis - Celery broker/backend (worker) + WebSocket pub/sub (api)"

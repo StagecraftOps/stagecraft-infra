@@ -1,6 +1,6 @@
 resource "random_password" "neo4j" {
   length  = 24
-  special = false # NEO4J_AUTH is "user/password" — avoid characters needing escaping there
+  special = false
 }
 
 locals {
@@ -8,9 +8,7 @@ locals {
 
   worker_internal_url = "http://stagecraft-worker.${var.namespace}.svc.cluster.local:8080"
   mcp_github_url      = "http://stagecraft-mcp.${var.namespace}.svc.cluster.local:8010/sse"
-  # Port 80 = the stagecraft-api ClusterIP Service port (targetPort 8000). The
-  # MCP server's search_remediations tool calls this; pointing at :8000 (the
-  # container port, not the Service port) times out.
+
   stagecraft_api_url = "http://stagecraft-api.${var.namespace}.svc.cluster.local:80"
   neo4j_uri          = "bolt://stagecraft-neo4j.${var.namespace}.svc.cluster.local:7687"
 
@@ -124,9 +122,6 @@ resource "aws_secretsmanager_secret_version" "frontend" {
   secret_string = jsonencode(local.frontend_payload)
 }
 
-# Consumed only by the Neo4j pod itself (NEO4J_AUTH="neo4j/<password>") — api
-# and worker get their NEO4J_URI/USER/PASSWORD via their own payloads above,
-# not this secret.
 resource "aws_secretsmanager_secret" "neo4j" {
   name                    = "${var.cluster_name}-neo4j-secrets"
   recovery_window_in_days = 0
@@ -136,10 +131,6 @@ resource "aws_secretsmanager_secret_version" "neo4j" {
   secret_string = jsonencode({ NEO4J_AUTH = "neo4j/${random_password.neo4j.result}" })
 }
 
-# --- External Secrets Operator's own IRSA role ---
-# Least-privilege: read-only on exactly these 6 secrets, nothing else in the
-# account. ESO uses this (via a ClusterSecretStore in stagecraft-helm) to
-# sync each secret into a same-named Kubernetes Secret.
 data "aws_iam_policy_document" "eso_trust" {
   statement {
     effect  = "Allow"

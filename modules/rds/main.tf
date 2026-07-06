@@ -1,14 +1,11 @@
 resource "random_password" "master" {
   length  = 32
-  special = false # avoid characters that need URL-encoding in a DATABASE_URL connection string
+  special = false
 }
 
-# Self-managed Secrets Manager entry (rather than RDS's manage_master_user_password
-# feature) so this module fully controls the secret's name/shape — stage 2 reads
-# it back by this same name to build each service's DATABASE_URL.
 resource "aws_secretsmanager_secret" "master_password" {
   name                    = "${var.name}-rds-master-password"
-  recovery_window_in_days = 0 # demo-scale: allow immediate deletion, not a 7-30 day hold
+  recovery_window_in_days = 0
 }
 
 resource "aws_secretsmanager_secret_version" "master_password" {
@@ -46,10 +43,6 @@ resource "aws_security_group" "this" {
   tags = { Name = "${var.name}-postgres" }
 }
 
-# pgvector (used by stagecraft-api's log_embeddings table) needs Postgres
-# >= 15.2/14.7/13.10 but no shared_preload_libraries or parameter-group change —
-# `CREATE EXTENSION vector` (already in stagecraft-api's alembic migration 0007)
-# works directly once the engine version supports it.
 resource "aws_db_instance" "this" {
   identifier     = "${var.name}-postgres"
   engine         = "postgres"

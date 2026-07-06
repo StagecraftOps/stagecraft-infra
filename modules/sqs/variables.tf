@@ -10,5 +10,5 @@ variable "visibility_timeout_seconds" {
 
 variable "message_retention_seconds" {
   type    = number
-  default = 345600 # 4 days
+  default = 345600
 }

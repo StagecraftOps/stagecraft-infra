@@ -52,8 +52,6 @@ variable "kb_s3_bucket_arn" {
   default     = ""
 }
 
-# --- RDS (Postgres) ---
-
 variable "rds_engine_version" {
   description = "Must be >= 15.2 for pgvector support — verify current availability before applying"
   type        = string
@@ -86,8 +84,6 @@ variable "rds_skip_final_snapshot" {
   default     = true
 }
 
-# --- ElastiCache (Redis) ---
-
 variable "redis_engine_version" {
   type    = string
   default = "7.1"
@@ -103,11 +99,6 @@ variable "redis_num_cache_clusters" {
   type        = number
   default     = 1
 }
-
-# --- Per-service secrets (stored in Secrets Manager here, synced into k8s
-# Secrets by the External Secrets Operator in stage 2 — never touch the
-# cluster directly, and never sit in a stage-2 tfvars file). Everything
-# below has no safe default — fill in via a gitignored terraform.tfvars. ---
 
 variable "github_client_id" {
   type      = string

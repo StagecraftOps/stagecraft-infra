@@ -2,9 +2,6 @@ locals {
   oidc_issuer_host = replace(var.oidc_provider_url, "https://", "")
 }
 
-# ---------------------------------------------------------------------------
-# stagecraft-webhook — publishes to SQS only
-# ---------------------------------------------------------------------------
 data "aws_iam_policy_document" "webhook_trust" {
   statement {
     effect  = "Allow"
@@ -47,9 +44,6 @@ resource "aws_iam_role_policy" "webhook_sqs" {
   })
 }
 
-# ---------------------------------------------------------------------------
-# stagecraft-worker — consumes SQS, calls Bedrock, optionally SES + KB S3
-# ---------------------------------------------------------------------------
 data "aws_iam_policy_document" "worker_trust" {
   statement {
     effect  = "Allow"
@@ -139,9 +133,6 @@ resource "aws_iam_role_policy" "worker_kb_s3" {
   })
 }
 
-# ---------------------------------------------------------------------------
-# stagecraft-api — publishes to SQS, calls Bedrock (Pipeline Chat)
-# ---------------------------------------------------------------------------
 data "aws_iam_policy_document" "api_trust" {
   statement {
     effect  = "Allow"
@@ -198,12 +189,6 @@ resource "aws_iam_role_policy" "api_bedrock" {
   })
 }
 
-# ---------------------------------------------------------------------------
-# AWS Load Balancer Controller — required so the "expose via load balancer"
-# requirement works; installed into the cluster via stagecraft-helm, this
-# just provisions the IAM side. Policy JSON is the canonical upstream file —
-# see modules/iam/policies/README.md for how to fetch/refresh it.
-# ---------------------------------------------------------------------------
 data "aws_iam_policy_document" "lb_controller_trust" {
   statement {
     effect  = "Allow"
@@ -238,12 +223,6 @@ resource "aws_iam_role_policy" "lb_controller" {
   policy = file("${path.module}/policies/aws-load-balancer-controller-policy.json")
 }
 
-# ---------------------------------------------------------------------------
-# EBS CSI driver — installed as an EKS addon in stage 2 (cluster-bootstrap),
-# this just provisions the IAM side. Neo4j is this platform's first stateful
-# (PVC-backed) workload, so dynamic EBS volume provisioning didn't exist
-# before this.
-# ---------------------------------------------------------------------------
 data "aws_iam_policy_document" "ebs_csi_trust" {
   statement {
     effect  = "Allow"

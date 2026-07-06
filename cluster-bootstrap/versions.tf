@@ -21,8 +21,6 @@ provider "aws" {
   region = var.aws_region
 }
 
-# Reads stage 1's local state file directly — no shared backend required.
-# If stage 1 moves to a remote backend later, update this block to match.
 data "terraform_remote_state" "stage1" {
   backend = "local"
   config = {

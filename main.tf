@@ -2,10 +2,6 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
-# --- Networking ---
-# terraform-aws-modules/vpc/aws — the de facto standard VPC module. Verify the
-# `~> 5.0` interface still matches after `terraform init` (module major
-# versions occasionally rename arguments) before trusting `terraform plan`.
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "~> 5.0"
@@ -18,7 +14,7 @@ module "vpc" {
   private_subnets = [cidrsubnet(var.vpc_cidr, 4, 2), cidrsubnet(var.vpc_cidr, 4, 3)]
 
   enable_nat_gateway   = true
-  single_nat_gateway   = true # one shared NAT, not one per AZ — keeps cost/complexity down for demo scale
+  single_nat_gateway   = true
   enable_dns_hostnames = true
   enable_dns_support   = true
 
@@ -34,15 +30,6 @@ module "vpc" {
   tags = { Name = "${var.cluster_name}-vpc" }
 }
 
-# --- EKS ---
-# Hand-rolled (not the terraform-aws-modules/eks registry module) — that
-# module resolves the calling identity's IAM role client-side via
-# aws_iam_session_context, which needs iam:GetRole on your own role.
-# PowerUserAccess (and similar restricted permission sets) don't grant that,
-# with no way to opt out of the module's lookup. The native
-# access_config.bootstrap_cluster_creator_admin_permissions flag below
-# achieves the same "creator gets cluster admin" outcome entirely
-# server-side, with no IAM introspection required. See modules/eks.
 module "eks" {
   source = "./modules/eks"
 
@@ -60,7 +47,6 @@ module "eks" {
   tags = { Name = var.cluster_name }
 }
 
-# --- RDS (Postgres, hand-rolled — see modules/rds for why) ---
 module "rds" {
   source = "./modules/rds"
 
@@ -77,7 +63,6 @@ module "rds" {
   skip_final_snapshot   = var.rds_skip_final_snapshot
 }
 
-# --- ElastiCache (Redis, hand-rolled — see modules/elasticache for why) ---
 module "elasticache" {
   source = "./modules/elasticache"
 
@@ -91,14 +76,12 @@ module "elasticache" {
   num_cache_clusters = var.redis_num_cache_clusters
 }
 
-# --- SQS ---
 module "sqs" {
   source = "./modules/sqs"
 
   name = var.cluster_name
 }
 
-# --- Per-service IRSA roles ---
 module "iam" {
   source = "./modules/iam"
 
@@ -110,8 +93,6 @@ module "iam" {
   kb_s3_bucket_arn  = var.kb_s3_bucket_arn
 }
 
-# --- Per-service secrets in Secrets Manager (synced to k8s by the External
-# Secrets Operator, installed in stage 2 — see modules/secrets) ---
 module "secrets" {
   source = "./modules/secrets"
 
